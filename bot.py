@@ -6,7 +6,7 @@ import telebot
 import logging
 import yaml
 
-from bot_api.app import app
+from bot_api.app import app, db
 
 
 # todo: refactor me
@@ -70,15 +70,22 @@ def send_info(message):
                      str(message))
 
 
-# Remove web hook, it fails sometimes the set if there is a previous webhook
-bot.remove_webhook()
+def main():
+    # create database
+    db.create_all()
+    # Remove web hook, it fails sometimes the set if there is a previous webhook
+    bot.remove_webhook()
 
-# Set web hook
-bot.set_webhook(url=WEBHOOK_URL_BASE+WEBHOOK_URL_PATH,
-                certificate=open(WEBHOOK_SSL_CERT, 'r'))
+    # Set web hook
+    bot.set_webhook(url=WEBHOOK_URL_BASE+WEBHOOK_URL_PATH,
+                    certificate=open(WEBHOOK_SSL_CERT, 'r'))
 
-# Start server
-app.run(host=WEBHOOK_LISTEN,
-        port=WEBHOOK_PORT,
-        ssl_context=(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV),
-        debug=True)
+    # Start server
+    app.run(host=WEBHOOK_LISTEN,
+            port=WEBHOOK_PORT,
+            ssl_context=(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV),
+            debug=True)
+
+
+if __name__ == '__main__':
+    main()
