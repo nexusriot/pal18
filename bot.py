@@ -1,29 +1,84 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import datetime
+import flask
 import telebot
-from bot_api.config import token
+import logging
+import yaml
+
+from bot_api.app import app
 
 
-bot = telebot.TeleBot(token, threaded=False)
+# todo: refactor me
+with open("config.yml", "r") as config_file:
+    cfg = yaml.load(config_file)
+
+# todo: move to the config loader
+API_TOKEN = cfg['bot']['api_token']
+WEBHOOK_HOST = cfg['server']['host']
+WEBHOOK_PORT = cfg['server']['port']
+WEBHOOK_LISTEN = cfg['server']['listen']
+WEBHOOK_SSL_CERT = cfg['server']['ssl_cert']
+WEBHOOK_SSL_PRIV = cfg['server']['ssl_key']
+
+WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
+WEBHOOK_URL_PATH = "/%s/" % API_TOKEN
 
 
-@bot.message_handler(commands=['help'])
-def handle_help_command(message):
-    bot.send_message(message.from_user.id, """
-    /start - Start the bot\n""")
+logger = telebot.logger
+telebot.logger.setLevel(logging.INFO)
+
+bot = telebot.TeleBot(API_TOKEN)
+
+
+# Empty web server index, return nothing, just http 200
+@app.route('/', methods=['GET', 'HEAD'])
+def index():
+    return 'hello'
+
+
+# Process web hook calls
+@app.route(WEBHOOK_URL_PATH, methods=['POST'])
+def web_hook():
+    if flask.request.headers.get('content-type') == 'application/json':
+        json_string = flask.request.get_data().encode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_messages([update.message])
+        return ''
+    else:
+        flask.abort(403)
 
 
 @bot.message_handler(commands=['start'])
 def handle_help_command(message):
-    bot.send_message(message.from_user.id, "Started")
-
-
-@bot.message_handler(content_types=['text'])
-def handle_text(message):
-    if message.text == 'date':
         bot.send_message(message.from_user.id,
-                         datetime.datetime.now())
+                         "Hey, %s" % message.from_user.first_name)
 
 
-bot.polling(none_stop=True, interval=1)
+# Handle '/help'
+@bot.message_handler(commands=['help'])
+def send_welcome(message):
+    bot.send_message(message.from_user.id,
+                     ("Hi, I am Pal 18 bot!.\n"
+                      "I don't like you, %s" % message.from_user.first_name))
+
+
+# Handle all other messages
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+def send_info(message):
+    bot.send_message(message.from_user.id,
+                     str(message))
+
+
+# Remove web hook, it fails sometimes the set if there is a previous webhook
+bot.remove_webhook()
+
+# Set web hook
+bot.set_webhook(url=WEBHOOK_URL_BASE+WEBHOOK_URL_PATH,
+                certificate=open(WEBHOOK_SSL_CERT, 'r'))
+
+# Start server
+app.run(host=WEBHOOK_LISTEN,
+        port=WEBHOOK_PORT,
+        ssl_context=(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV),
+        debug=True)
