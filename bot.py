@@ -6,7 +6,7 @@ import telebot
 import logging
 import yaml
 
-from bot_api.app import app, db
+from bot_api.db_api import db, app, BotRequest
 
 
 # todo: refactor me
@@ -49,6 +49,13 @@ def web_hook():
         flask.abort(403)
 
 
+@bot.message_handler(commands=['history'])
+def handle_requests_history_command(message):
+    history = BotRequest.get_history(message.from_user.id)
+    bot.send_message(message.from_user.id,
+                     history)
+
+
 @bot.message_handler(commands=['start'])
 def handle_help_command(message):
         bot.send_message(message.from_user.id,
@@ -66,6 +73,8 @@ def send_welcome(message):
 # Handle all other messages
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def send_info(message):
+    request = BotRequest(message)
+    request.db_save()
     bot.send_message(message.from_user.id,
                      str(message))
 
