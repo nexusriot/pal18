@@ -44,3 +44,26 @@ class Link(db.Model):
     def __init__(self, bot_request_id, text):
         self.bot_request_id = bot_request_id
         self.text = text
+
+
+class Task(db.Model):
+
+    __tablename__ = 'task'
+
+    id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
+    bot_request_id = db.Column('bot_request_id', db.ForeignKey('bot_request.id'),
+                               index=True, nullable=False)
+    text = db.Column('text', db.Text, nullable=False, default='')
+    time = db.Column('time', db.DateTime, nullable=False,
+                     default=datetime.datetime.utcnow())
+    notify_at = db.Column('notify_at', db.DateTime, nullable=False)
+    notify_sent = db.Column('notify_sent', db.DateTime, nullable=False,
+                            default=0)
+    completed = db.Column('completed', db.DateTime, nullable=False,
+                          default=0)
+    request = relationship('BotRequest')
+
+    def __init__(self, bot_request_id, text, notify_at):
+        self.bot_request_id = bot_request_id
+        self.text = text
+        self.notify_at = notify_at
