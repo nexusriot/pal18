@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+from sqlalchemy.orm import relationship
 from app import db
 
 
@@ -26,3 +27,20 @@ class BotRequest(db.Model):
         self.date = date
         self.first_name = first_name
         self.last_name = last_name
+
+
+class Link(db.Model):
+
+    __tablename__ = 'link'
+
+    id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
+    bot_request_id = db.Column('bot_request_id', db.ForeignKey('bot_request.id'),
+                               index=True, nullable=False)
+    text = db.Column('text', db.Text, nullable=False, default='')
+    time = db.Column('time', db.DateTime, nullable=False,
+                     default=datetime.datetime.utcnow())
+    request = relationship('BotRequest')
+
+    def __init__(self, bot_request_id, text):
+        self.bot_request_id = bot_request_id
+        self.text = text

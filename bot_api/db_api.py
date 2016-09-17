@@ -1,6 +1,8 @@
 import datetime
+import re
 from app import db, app
-from database import BotRequest as DbBotRequest
+from database import (BotRequest as DbBotRequest,
+                      Link as DbLink)
 
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -46,6 +48,7 @@ class BotRequest(object):
         request = DbBotRequest(**self.to_dict())
         db.session.add(request)
         db.session.commit()
+        return request.id
 
     @staticmethod
     def get_history(user_id):
@@ -61,3 +64,41 @@ class BotRequest(object):
             request.text,
             datetime.datetime.strftime(request.time, DATE_TIME_FORMAT))
                           for request in requests])
+
+
+class Link(object):
+    """
+    Link model interface class
+    """
+
+    link_pattern = "^(http|https|ftp)\://[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}" \
+                   "(:[a-zA-Z0-9]*)?/?([a-zA-Z0-9\-\._\?\,\'/\\\+&amp;%\$#\=~])*$"
+
+    def __init__(self, bot_request_id, text):
+        self.bot_request_id = bot_request_id
+        self.text = text
+
+    def db_save(self):
+        link = DbLink(self.bot_request_id,
+                      self.text)
+        db.session.add(link)
+        db.session.commit()
+        return link.id
+
+    @staticmethod
+    def check_link(text):
+        return re.match(Link.link_pattern, text)
+
+    @staticmethod
+    def get_links(user_id):
+        """
+        Gets links for the user
+        :param user_id:
+        :return:
+        """
+        links = db.session.query(DbLink).join(DbBotRequest).filter(
+            DbBotRequest.user_id == user_id).all()
+        return '\n'.join(['%s\t%s' % (
+            link.text,
+            datetime.datetime.strftime(link.time, DATE_TIME_FORMAT))
+                          for link in links])

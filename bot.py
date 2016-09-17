@@ -6,7 +6,8 @@ import telebot
 import logging
 import yaml
 
-from bot_api.db_api import db, app, BotRequest
+from bot_api.db_api import (db, app, BotRequest,
+                            Link)
 
 
 # todo: refactor me
@@ -56,6 +57,13 @@ def handle_requests_history_command(message):
                      history)
 
 
+@bot.message_handler(commands=['links'])
+def handle_links_history_command(message):
+    links = Link.get_links(message.from_user.id)
+    bot.send_message(message.from_user.id,
+                     links)
+
+
 @bot.message_handler(commands=['start'])
 def handle_help_command(message):
         bot.send_message(message.from_user.id,
@@ -74,7 +82,10 @@ def send_welcome(message):
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def send_info(message):
     request = BotRequest(message)
-    request.db_save()
+    request_id = request.db_save()
+    if Link.check_link(message.text):
+        link = Link(request_id, message.text)
+        link.db_save()
     bot.send_message(message.from_user.id,
                      str(message))
 
