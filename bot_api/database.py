@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 from sqlalchemy.orm import relationship
-from app import db
+from bot_api.app import db
 
 
 class BotRequest(db.Model):

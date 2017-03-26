@@ -1,9 +1,8 @@
 import datetime
 import re
-from app import db, app
-from database import (BotRequest as DbBotRequest,
-                      Link as DbLink,
-                      Task as DbTask)
+from bot_api.app import db, app
+from bot_api.database import (BotRequest as DbBotRequest,
+                              Link as DbLink, Task as DbTask)
 
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 

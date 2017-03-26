@@ -1,0 +1,15 @@
+.idea/
+.venv/
+*.egg-info/
+__pycache__/
+
+
+# test database
+app.db
+
+# config
+config.yml
+
+# ssl certs
+webhook_cert.pem
+webhook_pkey.pem

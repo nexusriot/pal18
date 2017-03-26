@@ -35,16 +35,16 @@ bot = telebot.TeleBot(API_TOKEN)
 # Empty web server index, return nothing, just http 200
 @app.route('/', methods=['GET', 'HEAD'])
 def index():
-    return 'hello'
+    return ''
 
 
 # Process web hook calls
 @app.route(WEBHOOK_URL_PATH, methods=['POST'])
 def web_hook():
     if flask.request.headers.get('content-type') == 'application/json':
-        json_string = flask.request.get_data().encode('utf-8')
+        json_string = flask.request.get_data().decode('utf-8')
         update = telebot.types.Update.de_json(json_string)
-        bot.process_new_messages([update.message])
+        bot.process_new_updates([update])
         return ''
     else:
         flask.abort(403)
@@ -93,9 +93,9 @@ def send_info(message):
 def main():
     # create database
     db.create_all()
-    # Remove web hook, it fails sometimes the set if there is a previous webhook
+    # Remove web hook, it fails sometimes the set if there is a previous
+    # webhook
     bot.remove_webhook()
-
     # Set web hook
     bot.set_webhook(url=WEBHOOK_URL_BASE+WEBHOOK_URL_PATH,
                     certificate=open(WEBHOOK_SSL_CERT, 'r'))
